@@ -2,20 +2,52 @@
   "name": "ttt_electron",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/main.js",
+  "main": "./main.js",
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --exec electron .",
+    "build:osx": "electron-builder --mac",
+    "build:linux": "npm run build:linux32 && npm run build:linux64",
+    "build:linux32": "electron-builder --linux --ia32",
+    "build:linux64": "electron-builder --linux --x64",
+    "build:win": "npm run build:win32 && npm run build:win64",
+    "build:win32": "electron-builder --win portable --ia32",
+    "build:win64": "electron-builder --win portable --x64",
+    "deploy": "electron-builder --windows nsis:ia32"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.5.0",
+    "check-internet-connected": "^2.0.6",
     "selenium-webdriver": "^4.12.0"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^6.4.2",
-    "electron": "^26.2.2"
+    "electron": "^26.2.2",
+    "electron-builder": "^24.6.4",
+    "electron-updater": "^6.1.4",
+    "nodemon": "^3.0.1"
+  },
+  "build": {
+    "productName": "KF_TextTradeTool",
+    "asar": true,
+    "win": {
+      "target": [
+        "zip",
+        "nsis"
+      ],
+      "icon": "./assets/회사로고1.jpg"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "directories": {
+      "buildResources": "./resources/installer/",
+      "output": "./dist/",
+      "app": "."
+    }
   }
 }

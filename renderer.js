@@ -1,6 +1,17 @@
-const { ipcRenderer, Notification } = require("electron");
+const { ipcRenderer } = require("electron");
+const checkInternet = require("check-internet-connected");
+
+const config = {
+  timeout: 5000,
+  retries: 3,
+  domain: "http://aha-dic.com",
+};
 
 window.onload = () => {
+  checkInternet(config)
+    .then(() => console.log("connection available"))
+    .catch((err) => console.log("no connection", err));
+
   const input = document.querySelector("input");
   const btn = document.querySelector("button");
   const textarea = document.querySelector("textarea");
@@ -21,13 +32,6 @@ window.onload = () => {
 
   ipcRenderer.on("translate", (evt, payload) => {
     const data = JSON.parse(payload);
-    setTimeout(() => {
-      let notice = new Notification({
-        title: "Loading...",
-        body: "데이터를 가져오는 중 입니다...",
-      });
-      new window.Notification(notice.title, notice.body);
-    }, 3000);
-    textarea.innerHTML = `아하사전 결과 : ${data[0]}\r파파고 결과 : ${data[1]}`;
+    textarea.innerHTML = `아하사전 : ${data[0]}\r파파고  : ${data[1]}`;
   });
 };

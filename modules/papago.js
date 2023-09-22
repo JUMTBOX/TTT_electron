@@ -1,7 +1,7 @@
 const { Builder, By, Key, until } = require("selenium-webdriver");
 const chrome = require("selenium-webdriver/chrome");
 
-const test = async (text) => {
+const papagoFunc = async (text) => {
   let driver = await new Builder()
     .forBrowser("chrome")
     .setChromeOptions(new chrome.Options().headless())
@@ -41,11 +41,10 @@ const test = async (text) => {
       By.css(".diction_text___1alha span")
     );
     // 한글 발음이 표시된 span 태그가 나오면 태그안의 텍스트를 가져옴
-    let answer = await resultEl.getText();
-    let result = `(${text.toUpperCase()})/(${answer})`;
+    let result = await resultEl.getText();
     return result;
   } catch (err) {
-    return "웹 크롤링에 실패하였습니다. 다시 시도해주세요!";
+    return "fail";
   } finally {
     setTimeout(() => {
       driver.quit();
@@ -53,4 +52,4 @@ const test = async (text) => {
   }
 };
 
-module.exports = test;
+module.exports = papagoFunc;
