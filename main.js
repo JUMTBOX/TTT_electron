@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
+const axios = require("axios");
 const ahaFunc = require("./modules/getKorPronounce");
 const papagoFunc = require("./modules/papago");
 const num2kr = require("./modules/num2kr");
@@ -9,7 +10,7 @@ function createWindow() {
     width: 1000,
     height: 600,
     webPreferences: {
-      nodeIntegration: false,
+      nodeIntegration: true,
       contextIsolation: false,
       webSecurity: false,
     },
@@ -83,5 +84,27 @@ ipcMain.on("translate", async (evt, payload) => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
+  }
+});
+
+ipcMain.handle("aha-fetch", async (evt, word) => {
+  let result = "";
+  try {
+    const { data } = await axios.get(
+      `http://aha-dic.com/View.asp?word=${word}`
+    );
+    const startIdx = data.match("한글발음").index;
+    const endIdx = data.match("</title>").index;
+
+    if (data) {
+      const krWord = data.slice(startIdx, endIdx);
+      const left = krWord.match(/[[]/).index + 1;
+      const right = krWord.match(",").index - 1;
+      const realData = krWord.slice(left, right);
+      result = realData;
+    }
+    return result;
+  } catch (err) {
+    console.error(err);
   }
 });

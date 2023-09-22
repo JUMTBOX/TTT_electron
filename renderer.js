@@ -27,6 +27,7 @@ window.onload = () => {
     if (e.key === "Enter") {
       const text = input.value;
       ipcRenderer.send("translate", text);
+      ipcRenderer.invoke("aha-fetch", "text").then((data) => console.log(data));
     }
   });
 
