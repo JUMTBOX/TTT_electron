@@ -30,7 +30,7 @@ app.whenReady().then(() => {
   });
 });
 
-//////////////////////////////////////////////////////////////////
+//icp...
 ipcMain.on("translate", async (evt, payload) => {
   const text = payload;
 
