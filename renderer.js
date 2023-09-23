@@ -18,21 +18,24 @@ window.onload = () => {
 
   btn.addEventListener("click", () => {
     const text = input.value;
-
-    ipcRenderer.send("translate", text);
+    ipcRenderer.invoke("fetch", text).then((res) => {
+      const data = JSON.parse(res);
+      console.log(data);
+      textarea.innerHTML = `아하사전 : ${data[0]}\r파파고  : ${data[1]}`;
+    });
   });
 
   //엔터키 눌러도 실행
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       const text = input.value;
-      ipcRenderer.send("translate", text);
-      ipcRenderer.invoke("aha-fetch", "text").then((data) => console.log(data));
-    }
-  });
 
-  ipcRenderer.on("translate", (evt, payload) => {
-    const data = JSON.parse(payload);
-    textarea.innerHTML = `아하사전 : ${data[0]}\r파파고  : ${data[1]}`;
+      ipcRenderer.invoke("fetch", text).then((res) => {
+        const data = JSON.parse(res);
+        console.log(data);
+        textarea.innerHTML = `아하사전 : ${data[0]}`;
+        // \r파파고  : ${data[1]}
+      });
+    }
   });
 };
