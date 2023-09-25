@@ -18,7 +18,6 @@ function numberToWordKo(number) {
   if (number === 0) return "영";
   const wordList = [];
   let place = 0;
-  console.log("실행됨");
 
   while (number > 0) {
     const digits = number % 10000;
@@ -121,5 +120,7 @@ function main(word) {
   }
   return result;
 }
+
+console.log(main(320));
 
 module.exports = main;

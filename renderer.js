@@ -21,7 +21,7 @@ window.onload = () => {
     ipcRenderer.invoke("fetch", text).then((res) => {
       const data = JSON.parse(res);
       console.log(data);
-      textarea.innerHTML = `아하사전 : ${data[0]}\r파파고  : ${data[1]}`;
+      textarea.innerHTML = `${data}`;
     });
   });
 
@@ -32,7 +32,7 @@ window.onload = () => {
 
       ipcRenderer.invoke("fetch", text).then((res) => {
         const data = JSON.parse(res);
-        textarea.innerHTML = `아하사전 : ${data}`;
+        textarea.innerHTML = ` ${data}`;
       });
     }
   });
