@@ -11,12 +11,13 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      webSecurity: false,
+      // webSecurity: false,
     },
     icon: path.join(__dirname, "./assets/회사로고1.jpg"),
   });
 
   win.loadFile("./index.html");
+  // win.loadURL("http://localhost:5500");
 }
 
 app.whenReady().then(() => {
@@ -69,7 +70,7 @@ ipcMain.handle("fetch", async (evt, text) => {
 
   //숫자 있으면 변환
   let numResTxt = text;
-  if (numRegex.test(text)) {
+  if (text.match(numRegex)) {
     const numFiltered = text.split(" ").filter((el) => numRegex.test(el));
     let numReal = [];
     for (let words of numFiltered) {
@@ -90,10 +91,13 @@ ipcMain.handle("fetch", async (evt, text) => {
   }
 
   let result = numResTxt;
+  // let result2 = numResTxt;
   for (let words of enReal) {
     try {
       let data1 = await ahaFunc(words);
+      // let data2 = await papagoFunc(words);
       result = result.replace(words, `(${words})/(${data1})`);
+      // result2 = result2.replace(words, `(${words})/(${data2})`);
     } catch (err) {
       console.error(err);
     }
