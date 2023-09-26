@@ -22,11 +22,11 @@ window.onload = () => {
     const text = input.value;
     ipcRenderer.invoke("fetch", text).then((res) => {
       const data = JSON.parse(res);
-      textarea1.innerHTML = `아하사전: ${data}`;
+      textarea1.innerHTML = `변환 결과: ${data}`;
     });
-    const res = await papagoFunc(text);
-    const data = JSON.parse(res);
-    textarea2.innerHTML = `파파고: ${data}`;
+    // const res = await papagoFunc(text);
+    // const data = JSON.parse(res);
+    // textarea2.innerHTML = `파파고: ${data}`;
   });
 
   //엔터키 눌러도 실행
@@ -36,12 +36,12 @@ window.onload = () => {
 
       ipcRenderer.invoke("fetch", text).then((res) => {
         const data = JSON.parse(res);
-        textarea1.innerHTML = `아하사전: ${data}`;
+        textarea1.innerHTML = `변환 결과: ${data}`;
       });
 
-      const res = await papagoFunc(text);
-      const data = JSON.parse(res);
-      textarea2.innerHTML = `파파고: ${data}`;
+      // const res = await papagoFunc(text);
+      // const data = JSON.parse(res);
+      // textarea2.innerHTML = `파파고: ${data}`;
     }
   });
 };

@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const axios = require("axios");
-const num2kr = require("./modules/num2kr");
+const { num2kr, numWithEnglish, convertPhone } = require("./modules/num2kr");
 const hardCoding = require("./modules/hardcode");
 
 function createWindow() {
@@ -65,17 +65,40 @@ const ahaFunc = async (word) => {
 
 ipcMain.handle("fetch", async (evt, text) => {
   const enRegex = /[a-zA-Z]/g;
-  const numRegex = /[0-9]/g;
+  const numRegex = /\d/g;
   const splited = text.split(" ").filter((el) => enRegex.test(el));
 
   //숫자 있으면 변환
   let numResTxt = text;
   if (text.match(numRegex)) {
     const numFiltered = text.split(" ").filter((el) => numRegex.test(el));
+
     let numReal = [];
     for (let words of numFiltered) {
       let word = words.match(numRegex).toString().replaceAll(",", "");
-      numReal.push(word);
+
+      if (words[0] === "0") {
+        let numStr = numFiltered.toString().replaceAll(",", "");
+        let data = convertPhone(numStr);
+        if (numFiltered.length > 1) {
+          let str = numFiltered.toString().replaceAll(",", " ");
+          let tempText = text.slice(
+            text.match(str)["index"],
+            text.match(str)["index"] + str.length
+          );
+          numResTxt = numResTxt.replace(tempText, `(${tempText})/(${data})`);
+        } else {
+          numResTxt = numResTxt.replace(words, `(${words})/(${data})`);
+        }
+        break;
+      }
+
+      if (words.match(enRegex)) {
+        let data = numWithEnglish(word);
+        numResTxt = numResTxt.replace(word, `(${word})/(${data})`);
+      } else {
+        numReal.push(word);
+      }
     }
 
     for (let words of numReal) {
