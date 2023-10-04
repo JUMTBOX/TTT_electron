@@ -13,7 +13,7 @@ function convertPhone(phone) {
       result.push(korNums[Number(num)]);
     }
   }
-  result = result.toString().replaceAll(",", " ");
+  result = result.toString().replaceAll(",", " ").trim();
   return result;
 }
 
@@ -128,63 +128,109 @@ function numberToWordKo2(number) {
   return wordList.reverse().join("");
 }
 
-function convertToKorean(number) {
+function convertToKorean(number, month, age) {
   const TEN_NAMES = [
     "",
-    "십",
-    "이십",
-    "삼십",
-    "사십",
-    "오십",
-    "육십",
-    "칠십",
-    "팔십",
-    "구십",
+    age ? "열" : month ? "시" : "십",
+    age ? "스물" : "이십",
+    age ? "서른" : "삼십",
+    age ? "마흔" : "사십",
+    age ? "쉰" : "오십",
+    age ? "예순" : "육십",
+    age ? "일흔" : "칠십",
+    age ? "여든" : "팔십",
+    age ? "아흔" : "구십",
   ];
   const NUMBER_NAMES = [
     "영",
-    "하나",
-    "둘",
-    "셋",
-    "넷",
+    age ? "한" : "일",
+    age ? "두" : "이",
+    age ? "세" : "삼",
+    age ? "네" : "사",
+    age ? "다섯" : "오",
+    age ? "여섯" : month ? "유" : "육",
+    age ? "일곱" : "칠",
+    age ? "여덟" : "팔",
+    age ? "아홉" : "구",
+  ];
+
+  const ten = Math.floor(number / 10);
+  const one = number % 10;
+
+  const tenName = TEN_NAMES[ten];
+  const oneName = NUMBER_NAMES[one];
+
+  if (ten === 0) {
+    return oneName;
+  } else if (one === 0) {
+    return tenName;
+  } else {
+    return tenName + oneName;
+  }
+}
+
+function oclock(num) {
+  num = parseInt(num);
+  const gt_ten = ["", "십", "이십"];
+  const combinedWithTen = [
+    "",
+    "일",
+    "이",
+    "삼",
+    "사",
+    "오",
+    "육",
+    "칠",
+    "팔",
+    "구",
+  ];
+  const lt_ten = [
+    "",
+    "한",
+    "두",
+    "세",
+    "네",
     "다섯",
     "여섯",
     "일곱",
     "여덟",
     "아홉",
+    "열",
   ];
 
-  if (number >= 0 && number <= 99) {
-    const ten = Math.floor(number / 10);
-    const one = number % 10;
+  const ten = Math.floor(num / 10);
+  const one = num % 10;
 
-    const tenName = TEN_NAMES[ten];
-    const oneName = NUMBER_NAMES[one];
+  const tenName = gt_ten[ten];
+  const oneName = lt_ten[one];
+  const combined = gt_ten[ten] + combinedWithTen[one];
 
-    if (ten === 0) {
-      return oneName;
-    } else if (one === 0) {
-      return tenName;
-    } else {
-      return tenName + oneName;
+  if (ten === 0) {
+    return oneName;
+  } else if (one === 0) {
+    if (num === 10) {
+      return lt_ten[num];
     }
+    return tenName;
+  } else if (num > 10 && num <= 12) {
+    return lt_ten[10] + oneName;
   } else {
-    return "";
+    return combined;
   }
 }
 
-function num2kr(word) {
+function num2kr(word, month, age) {
   const number = parseInt(word);
 
   let result;
   if (number >= 10000 && word.charAt(0) === "1") {
     result = numberToWordKo(number);
   } else if (number <= 99 && number > 0) {
-    result = convertToKorean(number);
+    result = convertToKorean(number, month, age);
   } else {
     result = numberToWordKo2(number);
   }
   return result;
 }
 
-module.exports = { num2kr, numWithEnglish, convertPhone };
+module.exports = { num2kr, numWithEnglish, convertPhone, oclock };

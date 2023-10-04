@@ -1,7 +1,12 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const axios = require("axios");
-const { num2kr, numWithEnglish, convertPhone } = require("./modules/num2kr");
+const {
+  num2kr,
+  numWithEnglish,
+  convertPhone,
+  oclock,
+} = require("./modules/num2kr");
 const hardCoding = require("./modules/hardcode");
 
 function createWindow() {
