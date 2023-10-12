@@ -68,4 +68,4 @@ const ahaFunc = async (word) => {
   return result;
 };
 
-module.exports = ahaFunc;
+module.exports = { ahaFunc };

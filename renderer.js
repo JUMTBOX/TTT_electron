@@ -24,9 +24,6 @@ window.onload = () => {
       const data = JSON.parse(res);
       textarea1.innerHTML = `변환 결과: ${data}`;
     });
-    // const res = await papagoFunc(text);
-    // const data = JSON.parse(res);
-    // textarea2.innerHTML = `파파고: ${data}`;
   });
 
   //엔터키 눌러도 실행
@@ -38,10 +35,6 @@ window.onload = () => {
         const data = JSON.parse(res);
         textarea1.innerHTML = `변환 결과: ${data}`;
       });
-
-      // const res = await papagoFunc(text);
-      // const data = JSON.parse(res);
-      // textarea2.innerHTML = `파파고: ${data}`;
     }
   });
 };

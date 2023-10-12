@@ -5,15 +5,14 @@ const value2 = ["", "만", "억", "조", "경"];
 function convertPhone(phone) {
   const korNums = ["공", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구"];
   const Regex = /[-]/g;
-  let result = [];
   let phoneSplit = phone.split("");
-
+  let result = [];
   for (let num of phoneSplit) {
     if (!Regex.test(num)) {
       result.push(korNums[Number(num)]);
     }
   }
-  result = result.toString().replaceAll(",", " ");
+  result = result.toString().replaceAll(",", " ").trim();
   return result;
 }
 
@@ -128,63 +127,144 @@ function numberToWordKo2(number) {
   return wordList.reverse().join("");
 }
 
-function convertToKorean(number) {
+function convertToKorean(number, month, age) {
   const TEN_NAMES = [
     "",
-    "십",
-    "이십",
-    "삼십",
-    "사십",
-    "오십",
-    "육십",
-    "칠십",
-    "팔십",
-    "구십",
+    age ? "열" : month ? "시" : "십",
+    age ? "스물" : "이십",
+    age ? "서른" : "삼십",
+    age ? "마흔" : "사십",
+    age ? "쉰" : "오십",
+    age ? "예순" : "육십",
+    age ? "일흔" : "칠십",
+    age ? "여든" : "팔십",
+    age ? "아흔" : "구십",
   ];
   const NUMBER_NAMES = [
     "영",
-    "하나",
-    "둘",
-    "셋",
-    "넷",
+    age ? "한" : "일",
+    age ? "두" : "이",
+    age ? "세" : "삼",
+    age ? "네" : "사",
+    age ? "다섯" : "오",
+    age ? "여섯" : month ? "유" : "육",
+    age ? "일곱" : "칠",
+    age ? "여덟" : "팔",
+    age ? "아홉" : "구",
+  ];
+
+  const ten = Math.floor(number / 10);
+  const one = number % 10;
+
+  const tenName = TEN_NAMES[ten];
+  const oneName = NUMBER_NAMES[one];
+
+  if (ten === 0) {
+    return oneName;
+  } else if (one === 0) {
+    return tenName;
+  } else {
+    return tenName + oneName;
+  }
+}
+
+function oclock(num) {
+  num = parseInt(num);
+  const gt_ten = ["", "십", "이십"];
+  const combinedWithTen = [
+    "",
+    "일",
+    "이",
+    "삼",
+    "사",
+    "오",
+    "육",
+    "칠",
+    "팔",
+    "구",
+  ];
+  const lt_ten = [
+    "",
+    "한",
+    "두",
+    "세",
+    "네",
     "다섯",
     "여섯",
     "일곱",
     "여덟",
     "아홉",
+    "열",
   ];
 
-  if (number >= 0 && number <= 99) {
-    const ten = Math.floor(number / 10);
-    const one = number % 10;
+  const ten = Math.floor(num / 10);
+  const one = num % 10;
 
-    const tenName = TEN_NAMES[ten];
-    const oneName = NUMBER_NAMES[one];
+  const tenName = gt_ten[ten];
+  const oneName = lt_ten[one];
+  const combined = gt_ten[ten] + combinedWithTen[one];
 
-    if (ten === 0) {
-      return oneName;
-    } else if (one === 0) {
-      return tenName;
-    } else {
-      return tenName + oneName;
+  if (ten === 0) {
+    return oneName;
+  } else if (one === 0) {
+    if (num === 10) {
+      return lt_ten[num];
     }
+    return tenName;
+  } else if (num > 10 && num <= 12) {
+    return lt_ten[10] + oneName;
   } else {
-    return "";
+    return combined;
   }
 }
 
-function num2kr(word) {
+function num2kr(word, month, age) {
   const number = parseInt(word);
 
   let result;
   if (number >= 10000 && word.charAt(0) === "1") {
     result = numberToWordKo(number);
   } else if (number <= 99 && number > 0) {
-    result = convertToKorean(number);
+    result = convertToKorean(number, month, age);
   } else {
     result = numberToWordKo2(number);
   }
   return result;
 }
 
-module.exports = { num2kr, numWithEnglish, convertPhone };
+function unitsTranslate(matched) {
+  const units = {
+    mm: "밀리미터, 미리",
+    cm: "센티미터, 센티",
+    m: "미터",
+    km: "킬로미터, 키로",
+    in: "인치",
+    mg: "밀리그램",
+    g: "그램",
+    kg: "킬로그램, 킬로",
+    t: "톤",
+    cc: "시시",
+    ml: "밀리리터, 미리",
+    L: "리터",
+    bit: "비트",
+    B: "바이트",
+    KB: "킬로바이트",
+    MB: "메가바이트, 메가",
+    GB: "기가바이트, 기가",
+    TB: "테라바이트, 테라",
+  };
+  const matchedNum = matched.replaceAll(/[^\d]/g, "");
+  const matchedEn = matched.replaceAll(/[^a-zA-Z]/g, "");
+  const numRes = num2kr(matchedNum, false, false);
+  const result = numRes + " " + units[matchedEn];
+
+  return result;
+}
+
+module.exports = {
+  num2kr,
+  numWithEnglish,
+  convertPhone,
+  oclock,
+  unitsTranslate,
+};
