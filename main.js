@@ -65,7 +65,7 @@ const ahaFunc = async (word) => {
 
 ipcMain.handle("fetch", async (evt, text) => {
   const enRegex = /[a-zA-Z]/g;
-  const numRegex = /\d/g;
+  const numRegex = /0-9/g;
   const splited = text.split(" ").filter((el) => enRegex.test(el));
 
   //숫자 있으면 변환
@@ -80,6 +80,7 @@ ipcMain.handle("fetch", async (evt, text) => {
       if (words[0] === "0") {
         let numStr = numFiltered.toString().replaceAll(",", "");
         let data = convertPhone(numStr);
+        //
         if (numFiltered.length > 1) {
           let str = numFiltered.toString().replaceAll(",", " ");
           let tempText = text.slice(
