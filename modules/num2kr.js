@@ -5,9 +5,8 @@ const value2 = ["", "만", "억", "조", "경"];
 function convertPhone(phone) {
   const korNums = ["공", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구"];
   const Regex = /[-]/g;
-  let result = [];
   let phoneSplit = phone.split("");
-
+  let result = [];
   for (let num of phoneSplit) {
     if (!Regex.test(num)) {
       result.push(korNums[Number(num)]);
