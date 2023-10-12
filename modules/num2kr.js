@@ -232,4 +232,39 @@ function num2kr(word, month, age) {
   return result;
 }
 
-module.exports = { num2kr, numWithEnglish, convertPhone, oclock };
+function unitsTranslate(matched) {
+  const units = {
+    mm: "밀리미터, 미리",
+    cm: "센티미터, 센티",
+    m: "미터",
+    km: "킬로미터, 키로",
+    in: "인치",
+    mg: "밀리그램",
+    g: "그램",
+    kg: "킬로그램, 킬로",
+    t: "톤",
+    cc: "시시",
+    ml: "밀리리터, 미리",
+    L: "리터",
+    bit: "비트",
+    B: "바이트",
+    KB: "킬로바이트",
+    MB: "메가바이트, 메가",
+    GB: "기가바이트, 기가",
+    TB: "테라바이트, 테라",
+  };
+  const matchedNum = matched.replaceAll(/[^\d]/g, "");
+  const matchedEn = matched.replaceAll(/[^a-zA-Z]/g, "");
+  const numRes = num2kr(matchedNum, false, false);
+  const result = numRes + " " + units[matchedEn];
+
+  return result;
+}
+
+module.exports = {
+  num2kr,
+  numWithEnglish,
+  convertPhone,
+  oclock,
+  unitsTranslate,
+};

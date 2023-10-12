@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const { ahaFunc } = require("./modules/getKorPronounce");
 const { numTranslate } = require("./modules/numTranslate");
+const { symbolTrans } = require("./modules/symbol");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -46,7 +47,10 @@ ipcMain.handle("fetch", async (evt, text) => {
     text = await numTranslate(text);
   }
   //영어 있으면 변환
-  const enFiltered = text.split(" ").filter((el) => enRegex.test(el));
+  const enFiltered = text
+    .split(" ")
+    .filter((el) => enRegex.test(el) && !/\(\d+[a-zA-Z]+\)/g.test(el));
+
   let enReal = [];
   for (let words of enFiltered) {
     let word = words.match(enRegex).toString().replaceAll(",", "");
@@ -61,6 +65,28 @@ ipcMain.handle("fetch", async (evt, text) => {
       console.error(err);
     }
   }
+  /** 영어 전사 합치는 로직*/
+  if (
+    text.match(/(\(\w+\)\/\(\S+\)\s\(\w+\)\/\(\S+\))(\s\(\w+\)\/\(\S+\))*/gi)
+  ) {
+    const findStickedTranslated = text.match(
+      /(\(\w+\)\/\(\S+\)\s\(\w+\)\/\(\S+\))(\s\(\w+\)\/\(\S+\))*/gi
+    );
+    for (let item of findStickedTranslated) {
+      let alterEn = item
+        .match(/\w+(?=\)\/)/g)
+        ?.toString()
+        .replaceAll(",", " ");
+
+      let alterKr = item
+        .match(/(?<=\/\()[^\)]+/g)
+        ?.toString()
+        .replaceAll(",", " ");
+
+      text = text.replaceAll(item, `(${alterEn})/(${alterKr})`);
+    }
+  }
+
   const res = JSON.stringify(text);
   return res;
 });

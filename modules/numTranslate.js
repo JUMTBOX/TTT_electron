@@ -1,11 +1,17 @@
-const { num2kr, numWithEnglish, convertPhone, oclock } = require("./num2kr");
+const {
+  num2kr,
+  numWithEnglish,
+  convertPhone,
+  oclock,
+  unitsTranslate,
+} = require("./num2kr");
 
 const numTranslate = (text) => {
   const enRegex = /[a-z]/gi;
   const numRegex = /\d/g;
   const notNumRegex = /\D/g;
   const dateRegex = /[년월일]/g;
-  const counterRegex = /[살개장채칸시위명]/g;
+  const counterRegex = /\d+(?=[살개장채칸시위명석/비트/])/g;
 
   const numFiltered = text.split(" ").filter((el) => el.match(numRegex));
   const dateFiltered = text.split(" ").filter((el) => el.match(dateRegex));
@@ -88,15 +94,12 @@ const numTranslate = (text) => {
     );
   }
 
-  /** 조건4. 년 월 일 포함 case 
-   1. /\d{1,4}[년월일]/g 쓰면 년월일 앞에 백,천,만 등 문자가 오면 인식 안됨 
-   2. /\S+[년월일]/g 은 년or월or일 앞에 붙어있는 공백이 아닌 문자들을 찾음(특수기호 포함) 
-  */
-  if (text.matchAll(/\S+[년월일]/g)) {
+  /** 조건4. 년 월 일 포함 case */
+  if (text.match(/(\d+|[백천만억조])(?=[년월일])/g)) {
     /**백,천,만 조건식에서 변환되었다면 동작*/
-    if (text.match(/(\)\/)(?=[년월일])/g)) {
+    if (text.match(/\)(?=[년월일])/g)) {
       console.log("excuted");
-      let startIdx = [...text.matchAll(/(\)\/)(?=[년월일])/g)][0]["index"] + 1;
+      let startIdx = [...text.matchAll(/\)(?=[년월일])/g)][0]["index"] + 1;
       let postAdd = text.slice(startIdx, startIdx + 1);
       let willReplacedList = text.match(/\((\S+)\)[년월일]/g);
 
@@ -126,10 +129,13 @@ const numTranslate = (text) => {
             ))
           : (text = text.replace(word, `(${word})/(${data} ${ing})`));
       } else if (ing === "월") {
-        data = num2kr(words, true);
-        (data === "유", "시")
-          ? (text = text.replace(word, `(${word})/(${data}${ing})`))
-          : (text = text.replace(word, `(${word})/(${data} ${ing})`));
+        if (words === "6월" || words === "10월") {
+          data = num2kr(words, true, false);
+          text = text.replace(word, `(${word})/(${data}${ing})`);
+        } else {
+          data = num2kr(words, false, false);
+          text = text.replace(word, `(${word})/(${data} ${ing})`);
+        }
       }
     }
   }
@@ -137,18 +143,19 @@ const numTranslate = (text) => {
   /**조건없이 그냥 numFiltered 루프를 시작하는데, 조건식을 다는 방향으로 리팩토링 해야할 듯 */
   for (let words of numFiltered) {
     /**조건5. 나이 or 수량 or 시간 */
-    if (words.match(counterRegex)) {
-      const ing = words.match(counterRegex).toString();
+    if (words.match(counterRegex) && !words.match(/\([가-힣]+\)/g)) {
+      const ing = words
+        .match(/[살개장채칸시위명석/비트/]/g)
+        .toString()
+        .replaceAll(",", "");
       const word = words.match(numRegex).toString().replaceAll(",", "") + ing;
-
-      console.log("실행됨", words, word, ing);
 
       let data = num2kr(words, false, true);
 
       if (ing === "시") {
         data = oclock(words);
       }
-      if (ing === "위") {
+      if (ing === "위" || ing === "비트") {
         data = num2kr(words, false, false);
       }
       text = text.replace(word, `(${word})/(${data} ${ing})`);
@@ -193,10 +200,19 @@ const numTranslate = (text) => {
       break;
     }
 
-    /**조건7. 영어와 같이 있으면 숫자도 영문식으로 발음 */
+    /**조건7. km,kg 등의 단위*/
+    if (text.match(/\d+(?=[a-z]+)/gi)) {
+      const matched = text.match(/\d+([a-z]+)/gi);
+      for (let willReplaced of matched) {
+        let res = unitsTranslate(willReplaced);
+        text = text.replaceAll(willReplaced, `(${willReplaced})/(${res})`);
+      }
+    }
+
+    /**조건8. 영어와 같이 있으면 숫자도 영문식으로 발음 */
     let word = words.match(numRegex).toString().replaceAll(",", "");
 
-    if (words.match(enRegex)) {
+    if (words.match(enRegex) && !words.match(/\d+(?=[a-z]+)/gi)) {
       const data = numWithEnglish(word);
       text = text.replace(word, `(${word})/(${data})`);
     } else if (
@@ -204,15 +220,24 @@ const numTranslate = (text) => {
       !words.match(counterRegex) /** 살과 같이 나이인 것 제외 */ &&
       !words.match(/[\b대\b]/g) /** 스코어를 이야기 하는 경우 제외*/ &&
       !words.match(/\d+(\.)\d+/g) /**소수점 제외 */ &&
-      !words.match(/\d+(?=[백천만])/g) /**숫자 뒤에 백,천,만이 붙은 경우 제외*/
+      !words.match(
+        /\d+(?=[백천만])/g
+      ) /**숫자 뒤에 백,천,만이 붙은 경우 제외*/ &&
+      !words.match(/\d+(?=[a-z]+)/gi) /**km,kg 등의 단위 제외 */
     ) {
       numReal.push(word);
     }
   }
 
-  /* ----------------------------------------------------------------------*/
-  console.log("리얼넘:", numReal);
-  /* ----------------------------------------------------------------------*/
+  /**조건9. 백,천,만etc가 붙어있어서 이미 변환된 결과 뒤에 수량 단위가 붙어 있는 경우 */
+  if (text.match(/(\)|\)\s)(?=[살개장채칸시위명석])/g)) {
+    let matched = text.match(/([가-힣]+\)|[가-힣]+\)\s)[살개장채칸시위명석]/g);
+    for (let willReplaced of matched) {
+      let res = willReplaced.replaceAll(/[살개장채칸시위명석\)]/g, "");
+      let ing = willReplaced.replaceAll(/[^살개장채칸시위명석]/g, "");
+      text = text.replaceAll(willReplaced, `${res} ${ing})`);
+    }
+  }
 
   /** 위의 조건에 다 해당 되지 않는 경우 일반적인 숫자 발음으로 치환 */
   for (let words of numReal) {
