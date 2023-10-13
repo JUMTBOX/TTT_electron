@@ -11,8 +11,9 @@ const numTranslate = (text) => {
   const enRegex = /[a-z]/gi;
   const numRegex = /\d/g;
   const notNumRegex = /\D/g;
-  const dateRegex = /[년월일]/g;
-  const counterRegex = /([가-힣]+\)|(\d+))(?=[살개장채칸시위명석]|(비트))/g;
+  const dateRegex = /(\d+|[백천만억조]+)[년월일분초]/g;
+  const counterRegex =
+    /([가-힣]+\)|(\d+))(?=[살개장채칸위명석원]|(비트)|(시간?))/g;
 
   const dateFiltered = text.split(" ").filter((el) => el.match(dateRegex));
 
@@ -77,7 +78,7 @@ const numTranslate = (text) => {
   }
 
   /**조건3. 스코어를 이야기하는 case */
-  if (text.match(/(\d+|\s)대(\d+|\s)/g)) {
+  if (text.match(/(\d+|\d+\s)대(\d+|\d+\s)/g)) {
     const matched = [...text.matchAll(/\d/g)];
     const [firstIdx, lastIdx] = [
       matched[0]["index"],
@@ -97,12 +98,12 @@ const numTranslate = (text) => {
    1. /\d{1,4}[년월일]/g 쓰면 년월일 앞에 백,천,만 등 문자가 오면 인식 안됨 
    2. /\S+[년월일]/g 은 년or월or일 앞에 붙어있는 공백이 아닌 문자들을 찾음(특수기호 포함) 
   */
-  if (text.match(/(\d+|[백천만억조])(?=[년월일])/g)) {
+  if (text.match(/(\d+|[백천만억조])(?=[년월일분초])/g)) {
     /**백,천,만 조건식에서 변환되었다면 동작*/
     if (text.match(/\)(?=[년월일])/g)) {
-      let startIdx = [...text.matchAll(/\)(?=[년월일])/g)][0]["index"] + 1;
+      let startIdx = [...text.matchAll(/\)(?=[년월일분초])/g)][0]["index"] + 1;
       let postAdd = text.slice(startIdx, startIdx + 1);
-      let willReplacedList = text.match(/\((\S+)\)[년월일]/g);
+      let willReplacedList = text.match(/\((\S+)\)[년월일분초]/g);
       for (let willReplaced of willReplacedList) {
         let alternative = willReplaced
           .replace("년", "")
@@ -111,9 +112,9 @@ const numTranslate = (text) => {
       }
     }
     for (let words of dateFiltered) {
-      const ing = words.match(/[년월일]/g).toString();
+      const ing = words.match(/[년월일분초]/g).toString();
       const word = words.match(numRegex).toString().replaceAll(",", "") + ing;
-      const addOn = words.match(/\D+(?=[년월일])/g);
+      const addOn = words.match(/\D+(?=[년월일분초])/g);
 
       let data = num2kr(words, false, false);
 
@@ -139,29 +140,34 @@ const numTranslate = (text) => {
   }
 
   /**조건5. 특수기호*/
-  if (text.match(/[^\)][\+\-\*\/][^\(]/g)) {
-    let matched = text.match(/(\d+)?[\+\-\*\/](\d+)?([가-힣])?/g);
-    for (let item of matched) {
-      const addOn = item.match(/[가-힣]/g)?.toString();
-      const [leftNum, rightNum] = [
-        item.match(/\d+(?=[\+\-\*\/])/g)?.toString(),
-        item.match(/(?<=[\+\-\*\/])\d+/g)?.toString(),
-      ];
-      const leftRes = num2kr(leftNum);
-      const rightRes = num2kr(rightNum);
-      const symbolRes = SymbolTrans(item);
-      if (!leftNum && !rightNum) {
-        text = text.replace(item, `(${item})/(${symbolRes})`);
-      } else {
-        addOn
-          ? (text = text.replace(
-              item,
-              `(${item})/(${leftRes} ${symbolRes} ${rightRes} ${addOn})`
-            ))
-          : (text = text.replace(
-              item,
-              `(${item})/(${leftRes} ${symbolRes} ${rightRes})`
-            ));
+  if (text.match(/[^\)](\d+)?[\+\-\*\/%](\d+)?[^\(]/g)) {
+    let certifying = text
+      .match(/[^\)](\d+)?[\+\-\*\/%](\d+)?[^\(]/g)
+      .filter((el) => el.match(/\-/g)).length;
+    if (certifying < 2) {
+      let matched = text.match(/(\d+)?[\+\-\*\/%](\d+)?([번])?/g);
+      for (let item of matched) {
+        const addOn = item.match(/[번]/g)?.toString();
+        const [leftNum, rightNum] = [
+          item.match(/\d+(?=[\+\-\*\/%])/g)?.toString(),
+          item.match(/(?<=[\+\-\*\/%])\d+/g)?.toString(),
+        ];
+        const leftRes = num2kr(leftNum);
+        const rightRes = num2kr(rightNum);
+        const symbolRes = SymbolTrans(item);
+        if (!leftNum && !rightNum) {
+          text = text.replace(item, `(${item})/(${symbolRes})`);
+        } else {
+          addOn
+            ? (text = text.replace(
+                item,
+                `(${item})/(${leftRes} ${symbolRes} ${rightRes} ${addOn})`
+              ))
+            : (text = text.replace(
+                item,
+                `(${item})/(${leftRes} ${symbolRes} ${rightRes})`
+              ));
+        }
       }
     }
   }
@@ -169,14 +175,16 @@ const numTranslate = (text) => {
   /**조건6. 나이 or 수량 or 시간 */
   if (text.match(counterRegex)) {
     const matched = text.match(
-      /([가-힣]+\)|(\d+))([살개장채칸시위명석]|(비트))/g
+      /([가-힣]+\)|(\d+))([살개장채칸위명석원]|(비트)|(시간?))/g
     );
-    const ingList = matched.toString().match(/[살개장채칸시위명석]|(비트)/g);
+    const ingList = matched
+      .toString()
+      .match(/[살개장채칸위명석원]|(비트)|(시간?)/g);
 
     for (let i = 0; i < matched.length; i += 1) {
       let data = num2kr(matched[i], false, true);
 
-      if (ingList[i] === "시") {
+      if (ingList[i] === "시" || ingList[i] === "시간") {
         data = oclock(matched[i]);
       }
       if (ingList[i] === "위" || ingList[i] === "비트") {
@@ -215,6 +223,8 @@ const numTranslate = (text) => {
         .slice(numFiltered.indexOf(words))
         .toString()
         .replaceAll(",", "");
+
+      console.log(numStr);
       const data = convertPhone(numStr);
 
       /**전화번호가 공백으로 이어져 있는 경우 */
@@ -270,18 +280,17 @@ const numTranslate = (text) => {
   }
 
   /**조건10. 백,천,만etc가 붙어있어서 이미 변환된 결과 뒤에 수량 단위가 붙어 있는 경우 */
-  if (text.match(/(\)|\)\s)(?=[살개장채칸시위명석])/g)) {
-    let matched = text.match(/([가-힣]+\)|[가-힣]+\)\s)[살개장채칸시위명석]/g);
+  if (text.match(/(\)|\)\s)(?=[살개장채칸시위명석원])/g)) {
+    let matched = text.match(
+      /([가-힣]+\)|[가-힣]+\)\s)[살개장채칸시위명석원]/g
+    );
 
     for (let willReplaced of matched) {
-      let res = willReplaced.replaceAll(/[살개장채칸시위명석\)]/g, "");
-      let ing = willReplaced.replaceAll(/[^살개장채칸시위명석]/g, "");
+      let res = willReplaced.replaceAll(/[살개장채칸시위명석원\)]/g, "");
+      let ing = willReplaced.replaceAll(/[^살개장채칸시위명석원]/g, "");
       text = text.replaceAll(willReplaced, `${res} ${ing})`);
     }
   }
-  /* ----------------------------------------------------------------------*/
-  console.log("리얼넘:", numReal);
-  /* ----------------------------------------------------------------------*/
 
   /** 위의 조건에 다 해당 되지 않는 경우 일반적인 숫자 발음으로 치환 */
   for (let words of numReal) {
