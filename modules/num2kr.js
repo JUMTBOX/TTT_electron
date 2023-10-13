@@ -170,7 +170,18 @@ function convertToKorean(number, month, age) {
 
 function oclock(num) {
   num = parseInt(num);
-  const gt_ten = ["", "십", "이십"];
+  const gt_ten = [
+    "",
+    "십",
+    "이십",
+    "삼십",
+    "사십",
+    "오십",
+    "육십",
+    "칠십",
+    "팔십",
+    "구십",
+  ];
   const combinedWithTen = [
     "",
     "일",

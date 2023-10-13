@@ -1,4 +1,5 @@
-const symbolTrans = (word) => {
+const SymbolTrans = (text) => {
+  const word = text.match(/[\+\-\*\/]/g).toString();
   const symbol = {
     plus: ["더하기", "플러스"],
     minus: ["빼기", "마이너스", "다시"],
@@ -6,18 +7,41 @@ const symbolTrans = (word) => {
     divide: ["나누기", "분의"],
   };
 
+  let result;
+
   switch (word) {
     case "+":
-      return symbol["plus"].toString();
+      result = symbol["plus"];
+      break;
     case "-":
-      return symbol["minus"].toString();
+      result = symbol["minus"];
+      break;
     case "*":
-      return symbol["multi"].toString();
+      result = symbol["multi"];
+      break;
     case "/":
-      return symbol["divide"].toString();
+      result = symbol["divide"];
+      break;
     default:
-      return;
+      break;
   }
+
+  if (text.match(/(?<=[\+\-\*\/])\d+([가-힣])/g) && word === "-") {
+    result = result[2];
+  } else if (text.match(/(^\d)\s?[\+\-\*\/]\s?(^\d)/g)) {
+    if (word === "*") {
+      result = result[1];
+    } else if (word === "/") {
+      result = "슬래시";
+    } else {
+      result = result[0] + "," + result[1];
+    }
+  } else {
+    word === "*"
+      ? (result = result[0])
+      : (result = result[0] + "," + result[1]);
+  }
+  return result;
 };
 
-module.exports = { symbolTrans };
+module.exports = { SymbolTrans };
