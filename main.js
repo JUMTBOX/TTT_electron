@@ -2,7 +2,14 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const { ahaFunc } = require("./modules/getKorPronounce");
 const { numTranslate } = require("./modules/numTranslate");
-const { symbolTrans } = require("./modules/symbol");
+const { SymbolTrans } = require("./modules/symbol");
+const {
+  num2kr,
+  numWithEnglish,
+  convertPhone,
+  oclock,
+  unitsTranslate,
+} = require("./modules/num2kr");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -65,6 +72,31 @@ ipcMain.handle("fetch", async (evt, text) => {
       console.error(err);
     }
   }
+  /**조건9. 영어와 같이 있으면 숫자도 영문식으로 발음 */
+  if (
+    text.match(/(\([a-z]+\)\/\([가-힣]+\))[\-\s]?(\(\d+\)\/\([가-힣]+\))/gi)
+  ) {
+    const numWithEn = text.match(
+      /(\([a-z]+\)\/\([가-힣]+\))[\-\s]?(\(\d+\)\/\([가-힣]+\))/gi
+    );
+    for (let item of numWithEn) {
+      let enAndNum = item
+        .match(/[\w\-]+/g)
+        .toString()
+        .replaceAll(",", "");
+
+      let kor = item
+        .match(/[가-힣]+/g)
+        .toString()
+        .replaceAll(",", " ");
+
+      const word = enAndNum.replaceAll(/[^0-9]/g, "");
+      const data1 = numWithEnglish(word);
+      const data2 = convertPhone(word);
+      text = text.replace(item, `(${enAndNum})/(${kor},${data1},${data2})`);
+    }
+  }
+
   /** 영어 전사 합치는 로직*/
   if (
     text.match(/(\(\w+\)\/\(\S+\)\s\(\w+\)\/\(\S+\))(\s\(\w+\)\/\(\S+\))*/gi)

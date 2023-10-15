@@ -1,5 +1,5 @@
 const SymbolTrans = (text) => {
-  const word = text.match(/[\+\-\*\/]/g).toString();
+  const word = text.match(/[\+\-\*\/%]/g).toString();
   const symbol = {
     plus: ["더하기", "플러스"],
     minus: ["빼기", "마이너스", "다시"],
@@ -36,6 +36,8 @@ const SymbolTrans = (text) => {
     } else {
       result = result[0] + "," + result[1];
     }
+  } else if (word === "%") {
+    result = "퍼센트";
   } else {
     word === "*"
       ? (result = result[0])

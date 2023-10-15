@@ -8,17 +8,20 @@ const {
 const { SymbolTrans } = require("./symbol");
 
 const numTranslate = (text) => {
-  const enRegex = /[a-z]/gi;
-  const numRegex = /\d/g;
-  const notNumRegex = /\D/g;
-  const dateRegex = /(\d+|[백천만억조]+)[년월일분초]/g;
+  const dateRegex = /(\d+|[백천만억조]+)[년월일]/g;
   const counterRegex =
-    /([가-힣]+\)|(\d+))(?=[살개장채칸위명석원]|(비트)|(시간?))/g;
+    /([가-힣]+\)|(\d+))(?=[살개장채칸위명석원분초번대]|(비트)|(시간?))/g;
 
   const dateFiltered = text.split(" ").filter((el) => el.match(dateRegex));
 
-  /**문자열에서 조사,어미 다 떼고 순수한 숫자만 담기 위한 배열*/
-  let numReal = [];
+  /**숫자사이에 낀 ","표시 없애기 */
+  if (text.match(/\d+,\d+/g)) {
+    let matched = text.match(/\d+\,\d+/g);
+    for (let item of matched) {
+      let alternate = item.replace(",", "");
+      text = text.replace(item, alternate);
+    }
+  }
 
   /**조건1. 소수점 판별 case*/
   if (text.match(/\d+(\.)\d+/g)) {
@@ -98,12 +101,12 @@ const numTranslate = (text) => {
    1. /\d{1,4}[년월일]/g 쓰면 년월일 앞에 백,천,만 등 문자가 오면 인식 안됨 
    2. /\S+[년월일]/g 은 년or월or일 앞에 붙어있는 공백이 아닌 문자들을 찾음(특수기호 포함) 
   */
-  if (text.match(/(\d+|[백천만억조])(?=[년월일분초])/g)) {
+  if (text.match(/(\d+|[백천만억조])(?=[년월일])/g)) {
     /**백,천,만 조건식에서 변환되었다면 동작*/
     if (text.match(/\)(?=[년월일])/g)) {
-      let startIdx = [...text.matchAll(/\)(?=[년월일분초])/g)][0]["index"] + 1;
+      let startIdx = [...text.matchAll(/\)(?=[년월일])/g)][0]["index"] + 1;
       let postAdd = text.slice(startIdx, startIdx + 1);
-      let willReplacedList = text.match(/\((\S+)\)[년월일분초]/g);
+      let willReplacedList = text.match(/\((\S+)\)[년월일]/g);
       for (let willReplaced of willReplacedList) {
         let alternative = willReplaced
           .replace("년", "")
@@ -112,9 +115,9 @@ const numTranslate = (text) => {
       }
     }
     for (let words of dateFiltered) {
-      const ing = words.match(/[년월일분초]/g).toString();
-      const word = words.match(numRegex).toString().replaceAll(",", "") + ing;
-      const addOn = words.match(/\D+(?=[년월일분초])/g);
+      const ing = words.match(/[년월일]/g).toString();
+      const word = words.match(/\d/g).toString().replaceAll(",", "") + ing;
+      const addOn = words.match(/\D+(?=[년월일])/g);
 
       let data = num2kr(words, false, false);
 
@@ -140,12 +143,27 @@ const numTranslate = (text) => {
   }
 
   /**조건5. 특수기호*/
-  if (text.match(/[^\)](\d+)?[\+\-\*\/%](\d+)?[^\(]/g)) {
-    let certifying = text
-      .match(/[^\)](\d+)?[\+\-\*\/%](\d+)?[^\(]/g)
-      .filter((el) => el.match(/\-/g)).length;
-    if (certifying < 2) {
-      let matched = text.match(/(\d+)?[\+\-\*\/%](\d+)?([번])?/g);
+  if (
+    text.match(/[^a-z](\d+)?[\+\-\*\%](\d+)?[^\(]/gi) &&
+    !text.match(/\d+\-\d+\-\d+/g)
+  ) {
+    if (text.match(/\(.+\)\/\(.+\)[\+\-\*\%]/g)) {
+      let matched = text.match(/\(.+\)\/\(.+\)[\+\-\*\%]/g);
+      for (let item of matched) {
+        let ing = item.match(/[\+\-\*\%]/g).toString();
+        let data = SymbolTrans(ing);
+        let frontAlternate = item.match(/[^\(].+(?=\)\/)/g).toString();
+        let backAlternate = item
+          .replace(ing, "")
+          .match(/[가-힣\s]+/g)
+          .toString();
+        text = text.replace(
+          item,
+          `(${frontAlternate}${ing})/(${backAlternate} ${data})`
+        );
+      }
+    } else {
+      let matched = text.match(/(\d+)?[\+\-\*\%](\d+)?([번])?/g);
       for (let item of matched) {
         const addOn = item.match(/[번]/g)?.toString();
         const [leftNum, rightNum] = [
@@ -174,26 +192,56 @@ const numTranslate = (text) => {
 
   /**조건6. 나이 or 수량 or 시간 */
   if (text.match(counterRegex)) {
-    const matched = text.match(
-      /([가-힣]+\)|(\d+))([살개장채칸위명석원]|(비트)|(시간?))/g
-    );
-    const ingList = matched
-      .toString()
-      .match(/[살개장채칸위명석원]|(비트)|(시간?)/g);
-
-    for (let i = 0; i < matched.length; i += 1) {
-      let data = num2kr(matched[i], false, true);
-
-      if (ingList[i] === "시" || ingList[i] === "시간") {
-        data = oclock(matched[i]);
-      }
-      if (ingList[i] === "위" || ingList[i] === "비트") {
-        data = num2kr(matched[i], false, false);
-      }
-      text = text.replace(
-        matched[i],
-        `(${matched[i]})/(${data} ${ingList[i]})`
+    if (text.match(/(\d+)([살개장채칸위명석원분초번대]|(비트)|(시간?))/g)) {
+      const matched = text.match(
+        /([가-힣]+\)|(\d+))([살개장채칸위명석원분초번대]|(비트)|(시간?))/g
       );
+      const ingList = matched
+        .toString()
+        .match(/[살개장채칸위명석원분초번대]|(비트)|(시간?)/g);
+
+      for (let i = 0; i < matched.length; i += 1) {
+        let data = num2kr(matched[i], false, true);
+
+        if (ingList[i] === "시" || ingList[i] === "시간") {
+          data = oclock(matched[i]);
+        }
+        if (ingList[i] === "위" || ingList[i] === "비트") {
+          data = num2kr(matched[i], false, false);
+        }
+        if (ingList[i] === "분" || ingList[i] === "초") {
+          data = num2kr(matched[i], false, false);
+        }
+
+        text = text.replace(
+          matched[i],
+          `(${matched[i]})/(${data} ${ingList[i]})`
+        );
+      }
+    } else if (
+      /**백,천,만etc가 붙어서 이미 변환된 결과 뒤에 수량 단위가 붙어 있는 경우 */
+      text.match(
+        /(?<=\s)(\(\S+\)\/\([가-힣\s]+\)[살개장채칸위명석원분초번대])/g
+      )
+    ) {
+      const matched = text.match(
+        /(?<=\s)(\(\S+\)\/\([가-힣\s]+\)[살개장채칸위명석원분초번대])/g
+      );
+      const ingList = matched
+        .toString()
+        .match(/[살개장채칸위명석원분초번대]|(비트)|(시간?)/g);
+
+      for (let i = 0; i < matched.length; i += 1) {
+        let frontAlternate = matched[i].match(/[^\(].+(?=\)\/)/g).toString();
+        let backAlternate = matched[i]
+          .replace(ingList[i], "")
+          .match(/(?<=\/\()[가-힣\s]+/g)
+          .toString();
+        text = text.replace(
+          matched[i],
+          `(${frontAlternate} ${ingList[i]})/(${backAlternate} ${ingList[i]})`
+        );
+      }
     }
   }
 
@@ -214,88 +262,39 @@ const numTranslate = (text) => {
     }
   }
 
-  const numFiltered = text.split(" ").filter((el) => el.match(numRegex));
-  /**조건없이 그냥 numFiltered 루프를 시작하는데, 조건식을 다는 방향으로 리팩토링 해야할 듯 */
-  for (let words of numFiltered) {
-    /**조건8. 숫자의 앞자리가 0이면 전화번호로 간주 */
-    if (words[0] === "0") {
-      const numStr = numFiltered
-        .slice(numFiltered.indexOf(words))
-        .toString()
-        .replaceAll(",", "");
-
-      console.log(numStr);
-      const data = convertPhone(numStr);
-
-      /**전화번호가 공백으로 이어져 있는 경우 */
-      let condition = numFiltered.slice(numFiltered.indexOf(words));
-      if (condition.length > 1) {
-        let notNum = condition
-          .filter((el) => el.match(notNumRegex))
-          .toString()
-          .replaceAll(",", "")
-          .match(notNumRegex);
-        let numWithEmpty = numFiltered
-          .slice(numFiltered.indexOf(words))
-          .toString()
-          .replaceAll(",", " ");
-        const tempText = text.slice(
-          text.match(numWithEmpty)["index"],
-          text.match(numWithEmpty)["index"] +
-            (numWithEmpty.length - notNum.length)
-        );
-        text = text.replace(tempText, `(${tempText})/(${data})`);
+  /**조건8. 전화번호 형식 감지 */
+  if (text.match(/0\d{1,2}(\-|\s?)\d+(\-|\s?)\d+/g)) {
+    const matched = text.match(/0\d{1,2}(\-|\s?)\d+(\-|\s?)\d+/g);
+    for (let item of matched) {
+      if (item.match(/\d+\-\d+\-\d+/g)) {
+        /**전화번호가 하이픈으로 이어져 있는 경우*/
+        const data = convertPhone(item.replaceAll("-", ""));
+        text = text.replace(item, `(${item})/(${data})`);
+      } else if (item.match(/\d+\s\d+\s\d+/g)) {
+        /**전화번호가 공백으로 이어져 있는 경우 */
+        const data = convertPhone(item.replaceAll(" ", ""));
+        text = text.replace(item, `(${item})/(${data})`);
       } else {
-        /** 전화번호가 하이픈으로 이어져있거나 그냥 붙어서 적힌 경우*/
-        let notNum = condition
-          .filter((el) => el.match(notNumRegex))
-          .toString()
-          .replaceAll(",", "")
-          .match(notNumRegex);
-        words = words.slice(0, words.length - notNum.length);
-        text = text.replaceAll(words, `(${words})/(${data})`);
+        /**전화번호가 붙어서 적혀있는 경우 */
+        const data = convertPhone(item);
+        text = text.replace(item, `(${item})/(${data})`);
       }
-      break;
-    }
-
-    /**조건9. 영어와 같이 있으면 숫자도 영문식으로 발음 */
-    let word = words.match(numRegex).toString().replaceAll(",", "");
-
-    if (words.match(enRegex) && !words.match(/\d+(?=[a-z]+)/gi)) {
-      const data = numWithEnglish(word);
-      text = text.replace(word, `(${word})/(${data})`);
-    } else if (
-      !words.match(dateRegex) /** 년월일에 걸러진 것 제외 */ &&
-      !words.match(counterRegex) /** 살과 같이 나이인 것 제외 */ &&
-      !words.match(/\d\s대\s\d/g) /** 스코어를 이야기 하는 경우 제외*/ &&
-      !words.match(/\d+(\.)\d+/g) /**소수점 제외 */ &&
-      !words.match(
-        /\d+(?=[백천만억조])/g
-      ) /**숫자 뒤에 백,천,만이 붙은 경우 제외*/ &&
-      !words.match(/\d+(?=[a-z]+)/gi) /**km,kg 등의 단위 제외 */ &&
-      !words.match(/(\d+)?[\+\-\*\/](\d+)?/g)
-    ) {
-      numReal.push(word);
     }
   }
 
-  /**조건10. 백,천,만etc가 붙어있어서 이미 변환된 결과 뒤에 수량 단위가 붙어 있는 경우 */
-  if (text.match(/(\)|\)\s)(?=[살개장채칸시위명석원])/g)) {
-    let matched = text.match(
-      /([가-힣]+\)|[가-힣]+\)\s)[살개장채칸시위명석원]/g
-    );
+  /** 위의 조건들에 전부 해당 되지 않는 경우 일반적인 숫자 발음으로 치환 */
+  if (text.replaceAll(/\(.+\)\/\(.+\)/g, "").match(/[^a-z\s\-]\d+/gi)) {
+    /**문자열에서 조사,어미 다 떼고 순수한 숫자만 담기 위한 배열*/
+    const remainder = text
+      .replaceAll(/\(.+\)\/\(.+\)/g, "")
+      .match(/[^a-z\s\-]\d+/gi);
 
-    for (let willReplaced of matched) {
-      let res = willReplaced.replaceAll(/[살개장채칸시위명석원\)]/g, "");
-      let ing = willReplaced.replaceAll(/[^살개장채칸시위명석원]/g, "");
-      text = text.replaceAll(willReplaced, `${res} ${ing})`);
+    console.log("리메인더", remainder);
+
+    for (let words of remainder) {
+      const data = num2kr(words);
+      text = text.replaceAll(words, `(${words})/(${data})`);
     }
-  }
-
-  /** 위의 조건에 다 해당 되지 않는 경우 일반적인 숫자 발음으로 치환 */
-  for (let words of numReal) {
-    const data = num2kr(words);
-    text = text.replaceAll(words, `(${words})/(${data})`);
   }
 
   return text;
