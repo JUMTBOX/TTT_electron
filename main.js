@@ -2,14 +2,7 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const { ahaFunc } = require("./modules/getKorPronounce");
 const { numTranslate } = require("./modules/numTranslate");
-const { SymbolTrans } = require("./modules/symbol");
-const {
-  num2kr,
-  numWithEnglish,
-  convertPhone,
-  oclock,
-  unitsTranslate,
-} = require("./modules/num2kr");
+const { numWithEnglish, convertPhone } = require("./modules/num2kr");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -46,7 +39,7 @@ app.on("window-all-closed", () => {
 /////////////////////////////////////////////////////////
 
 ipcMain.handle("fetch", async (evt, text) => {
-  const enRegex = /[a-zA-Z]/g;
+  const enRegex = /[a-zA-Z&]/g;
   const numRegex = /\d/g;
 
   //숫자 있으면 변환

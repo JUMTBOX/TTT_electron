@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 const hardCoding = (unique) => {
-  let enRegex = /[a-z,A-Z]/g;
+  let enRegex = /[a-zA-Z&]/g;
   let matched = unique.match(enRegex);
   let result = "";
 
@@ -37,6 +37,9 @@ const hardCoding = (unique) => {
   if (matched !== null) {
     for (let spell of matched) {
       let digit = spell.toUpperCase().charCodeAt(0);
+      if (spell === "&") {
+        digit = 78;
+      }
       result += enObj[`${digit}`];
     }
   }
@@ -46,18 +49,23 @@ const hardCoding = (unique) => {
 const ahaFunc = async (word) => {
   let result = "";
   try {
-    const { data } = await axios.get(
-      `http://aha-dic.com/View.asp?word=${word}`
-    );
-    const startIdx = data.match("한글발음").index;
-    const endIdx = data.match("</title>").index;
+    if (word.includes("&")) {
+      let hardResult = await hardCoding(word);
+      result = hardResult;
+    } else {
+      const { data } = await axios.get(
+        `http://aha-dic.com/View.asp?word=${word}`
+      );
+      const startIdx = data.match("한글발음").index;
+      const endIdx = data.match("</title>").index;
 
-    if (data) {
-      const krWord = data.slice(startIdx, endIdx);
-      const left = krWord.match(/[[]/).index + 1;
-      const right = krWord.match(",").index - 1;
-      const realData = krWord.slice(left, right);
-      result = realData;
+      if (data) {
+        const krWord = data.slice(startIdx, endIdx);
+        const left = krWord.match(/[[]/).index + 1;
+        const right = krWord.match(",").index - 1;
+        const realData = krWord.slice(left, right);
+        result = realData;
+      }
     }
   } catch (err) {
     if (err) {

@@ -1,14 +1,8 @@
-const {
-  num2kr,
-  numWithEnglish,
-  convertPhone,
-  oclock,
-  unitsTranslate,
-} = require("./num2kr");
+const { num2kr, convertPhone, oclock, unitsTranslate } = require("./num2kr");
 const { SymbolTrans } = require("./symbol");
 
 const numTranslate = (text) => {
-  const dateRegex = /(\d+|[백천만억조]+)[년월일]/g;
+  const dateRegex = /(\d+|[백천만억조]+)[년월일박]/g;
   const counterRegex =
     /([가-힣]+\)|(\d+))(?=[살개장채칸위명석원분초번대]|(비트)|(시간?))/g;
 
@@ -101,7 +95,7 @@ const numTranslate = (text) => {
    1. /\d{1,4}[년월일]/g 쓰면 년월일 앞에 백,천,만 등 문자가 오면 인식 안됨 
    2. /\S+[년월일]/g 은 년or월or일 앞에 붙어있는 공백이 아닌 문자들을 찾음(특수기호 포함) 
   */
-  if (text.match(/(\d+|[백천만억조])(?=[년월일])/g)) {
+  if (text.match(/(\d+|[백천만억조])(?=[년월일박])/g)) {
     /**백,천,만 조건식에서 변환되었다면 동작*/
     if (text.match(/\)(?=[년월일])/g)) {
       let startIdx = [...text.matchAll(/\)(?=[년월일])/g)][0]["index"] + 1;
@@ -115,9 +109,9 @@ const numTranslate = (text) => {
       }
     }
     for (let words of dateFiltered) {
-      const ing = words.match(/[년월일]/g).toString();
+      const ing = words.match(/[년월일박]/g).toString();
       const word = words.match(/\d/g).toString().replaceAll(",", "") + ing;
-      const addOn = words.match(/\D+(?=[년월일])/g);
+      const addOn = words.match(/\D+(?=[년월일박])/g);
 
       let data = num2kr(words, false, false);
 
@@ -138,6 +132,8 @@ const numTranslate = (text) => {
           data = num2kr(words, false, false);
           text = text.replace(word, `(${word})/(${data}${ing})`);
         }
+      } else if (ing === "박") {
+        text = text.replace(word, `(${word})/(${data} ${ing})`);
       }
     }
   }
@@ -192,7 +188,10 @@ const numTranslate = (text) => {
 
   /**조건6. 나이 or 수량 or 시간 */
   if (text.match(counterRegex)) {
-    if (text.match(/(\d+)([살개장채칸위명석원분초번대]|(비트)|(시간?))/g)) {
+    if (
+      text.match(/(\d+)([살개장채칸위명석원분초번대]|(비트)|(시간?))/g) &&
+      !text.match(/(?<=[살개장채칸위명석원분초번대]|(비트)|(시간?))\)/g)
+    ) {
       const matched = text.match(
         /([가-힣]+\)|(\d+))([살개장채칸위명석원분초번대]|(비트)|(시간?))/g
       );

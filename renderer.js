@@ -1,6 +1,5 @@
 const { ipcRenderer } = require("electron");
 const checkInternet = require("check-internet-connected");
-const papagoFunc = require("./modules/papagoFunc2");
 
 const config = {
   timeout: 5000,
@@ -16,7 +15,7 @@ window.onload = () => {
   const input = document.querySelector("input");
   const btn = document.querySelector("button");
   const textarea1 = document.querySelector(".ahaResult");
-  const textarea2 = document.querySelector(".papagoResult");
+  // const textarea2 = document.querySelector(".papagoResult");
 
   btn.addEventListener("click", async () => {
     const text = input.value;
