@@ -4,7 +4,7 @@ const { SymbolTrans } = require("./symbol");
 const numTranslate = (text) => {
   const dateRegex = /(\d+|[백천만억조]+)[년월일박]/g;
   const counterRegex =
-    /([가-힣]+\)|(\d+))(?=[살개장채칸위명석원분초번대]|(비트)|(시간?))/g;
+    /([가-힣\s]+\)|(\d+))(?=[살개장채칸위명석원분초번대석]|(비트)|(시간?))/g;
 
   const dateFiltered = text.split(" ").filter((el) => el.match(dateRegex));
 
@@ -75,7 +75,7 @@ const numTranslate = (text) => {
   }
 
   /**조건3. 스코어를 이야기하는 case */
-  if (text.match(/(\d+|\d+\s)대(\d+|\d+\s)/g)) {
+  if (text.match(/(\d+|\d+\s)대(\d+|\s\d+)/g)) {
     const matched = [...text.matchAll(/\d/g)];
     const [firstIdx, lastIdx] = [
       matched[0]["index"],
@@ -108,6 +108,7 @@ const numTranslate = (text) => {
         text = text.replaceAll(willReplaced, alternative);
       }
     }
+
     for (let words of dateFiltered) {
       const ing = words.match(/[년월일박]/g).toString();
       const word = words.match(/\d/g).toString().replaceAll(",", "") + ing;
@@ -140,11 +141,12 @@ const numTranslate = (text) => {
 
   /**조건5. 특수기호*/
   if (
-    text.match(/[^a-z](\d+)?[\+\-\*\%](\d+)?[^\(]/gi) &&
+    text.match(/[^a-z](\d+)?[\+\-\*\/%](\d+)?[^\(]/gi) &&
     !text.match(/\d+\-\d+\-\d+/g)
   ) {
-    if (text.match(/\(.+\)\/\(.+\)[\+\-\*\%]/g)) {
-      let matched = text.match(/\(.+\)\/\(.+\)[\+\-\*\%]/g);
+    console.log("조건5 실행");
+    if (text.match(/\(.+\)\/\(.+\)[\+\-\*\/%]/g)) {
+      let matched = text.match(/\(.+\)\/\(.+\)[\+\-\*\/%]/g);
       for (let item of matched) {
         let ing = item.match(/[\+\-\*\%]/g).toString();
         let data = SymbolTrans(ing);
@@ -159,7 +161,8 @@ const numTranslate = (text) => {
         );
       }
     } else {
-      let matched = text.match(/(\d+)?[\+\-\*\%](\d+)?([번])?/g);
+      let matched = text.match(/(\d+)?[\+\-\*\/%](\d+)?(번)?/g);
+
       for (let item of matched) {
         const addOn = item.match(/[번]/g)?.toString();
         const [leftNum, rightNum] = [
@@ -189,17 +192,17 @@ const numTranslate = (text) => {
   /**조건6. 나이 or 수량 or 시간 */
   if (text.match(counterRegex)) {
     if (
-      text.match(/(\d+)([살개장채칸위명석원분초번대]|(비트)|(시간?))/g) &&
-      !text.match(/(?<=[살개장채칸위명석원분초번대]|(비트)|(시간?))\)/g)
+      text.match(/(\d+)([살개장채칸위명석원분초번대석]|(비트)|(시간?))/g) &&
+      !text.match(/(?<=[살개장채칸위명석원분초번대석]|(비트)|(시간?))[\)\d]/g)
     ) {
       const matched = text.match(
-        /([가-힣]+\)|(\d+))([살개장채칸위명석원분초번대]|(비트)|(시간?))/g
+        /(\d+)([살개장채칸위명석원분초번대]|(비트)|(시간?))/g
       );
       const ingList = matched
         .toString()
         .match(/[살개장채칸위명석원분초번대]|(비트)|(시간?)/g);
 
-      for (let i = 0; i < matched.length; i += 1) {
+      for (let i = 0; i < matched?.length; i += 1) {
         let data = num2kr(matched[i], false, true);
 
         if (ingList[i] === "시" || ingList[i] === "시간") {
@@ -217,14 +220,15 @@ const numTranslate = (text) => {
           `(${matched[i]})/(${data} ${ingList[i]})`
         );
       }
-    } else if (
-      /**백,천,만etc가 붙어서 이미 변환된 결과 뒤에 수량 단위가 붙어 있는 경우 */
+    }
+    /** 조건7. 백,천,만etc가 붙어서 이미 변환된 결과 뒤에 수량 단위가 붙어 있는 경우 */
+    if (
       text.match(
-        /(?<=\s)(\(\S+\)\/\([가-힣\s]+\)[살개장채칸위명석원분초번대])/g
+        /(?<=\s)\(\S+\)\/\([가-힣\s]+\)([살개장채칸위명석원분초번대석]|(비트)|(시간?))/g
       )
     ) {
       const matched = text.match(
-        /(?<=\s)(\(\S+\)\/\([가-힣\s]+\)[살개장채칸위명석원분초번대])/g
+        /(?<=\s)(\(\S+\)\/\([가-힣\s,]+\)[살개장채칸위명석원분초번대석])/gi
       );
       const ingList = matched
         .toString()
@@ -244,7 +248,7 @@ const numTranslate = (text) => {
     }
   }
 
-  /**조건7. km,kg 등의 단위*/
+  /**조건8. km,kg 등의 단위*/
   if (text.match(/([가-힣]+\)|(\d+))(?=[a-z]+)/gi)) {
     const matched = text.match(/([가-힣]+\)|\d+)([a-z]+)/gi);
 
@@ -261,7 +265,7 @@ const numTranslate = (text) => {
     }
   }
 
-  /**조건8. 전화번호 형식 감지 */
+  /**조건9. 전화번호 형식 감지 */
   if (text.match(/0\d{1,2}(\-|\s?)\d+(\-|\s?)\d+/g)) {
     const matched = text.match(/0\d{1,2}(\-|\s?)\d+(\-|\s?)\d+/g);
     for (let item of matched) {
